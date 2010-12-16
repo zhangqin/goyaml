@@ -2,14 +2,38 @@ include $(GOROOT)/src/Make.inc
 
 all: install
 
-install:
-	cd src && gomake install
+DIRS=\
+	data\
+	parser\
+	scanner\
+	token\
 
-clean:
-	cd src && gomake clean
+TEST=\
+	scanner\
 
-nuke:
-	cd src && gomake nuke
+install.dirs: $(addsuffix .install, $(DIRS))
+clean.dirs: $(addsuffix .clean, $(DIRS))
+nuke.dirs: $(addsuffix .nuke, $(DIRS))
+test.dirs: $(addsuffix .test, $(TEST))
 
-test:
-	cd src && gomake test
+%.install:
+	+cd $* && gomake install
+
+%.clean:
+	+cd $* && gomake clean
+
+%.nuke:
+	+cd $* && gomake nuke
+
+%.test:
+	+cd $* && gomake test
+
+install: install.dirs
+clean: clean.dirs
+nuke: nuke.dirs
+test: test.dirs
+
+data.install: parser.install
+parser.install: token.install scanner.install
+scanner.install: token.install
+token.install:
