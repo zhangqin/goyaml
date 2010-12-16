@@ -1,6 +1,6 @@
 //
-//	yaml/scanner/scanner.go
-//	goray
+//	scanner/scanner.go
+//	goyaml
 //
 //	Created by Ross Light on 2010-06-24.
 //
@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"yaml/token"
+	"goyaml.googlecode.com/hg/token"
 )
 
 type simpleKey struct {

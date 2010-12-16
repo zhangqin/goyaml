@@ -1,6 +1,6 @@
 //
-//	yaml/parser/ast.go
-//	goray
+//	parser/ast.go
+//	goyaml
 //
 //	Created by Ross Light on 2010-07-02.
 //
@@ -8,7 +8,7 @@
 package parser
 
 import (
-	"yaml/token"
+	"goyaml.googlecode.com/hg/token"
 )
 
 // Document stores data related to a single document in a stream.

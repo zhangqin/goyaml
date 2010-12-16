@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=yaml/scanner
+TARG=goyaml.googlecode.com/hg/scanner
 GOFILES=\
 	chars.go\
 	reader.go\

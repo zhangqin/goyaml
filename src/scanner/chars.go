@@ -1,6 +1,6 @@
 //
-//	yaml/scanner/chars.go
-//	goray
+//	scanner/chars.go
+//	goyaml
 //
 //	Created by Ross Light on 2010-06-28.
 //

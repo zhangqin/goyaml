@@ -1,6 +1,6 @@
 //
-//	yaml/scanner/reader.go
-//	goray
+//	scanner/reader.go
+//	goyaml
 //
 //	Created by Ross Light on 2010-06-25.
 //
@@ -11,7 +11,7 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"yaml/token"
+	"goyaml.googlecode.com/hg/token"
 )
 
 // reader is an arbitrarily buffered reader.

@@ -1,6 +1,6 @@
 //
-//	yaml/data/schema.go
-//	goray
+//	data/schema.go
+//	goyaml
 //
 //	Created by Ross Light on 2010-07-03.
 //
@@ -10,7 +10,7 @@ package data
 import (
 	"os"
 	"regexp"
-	"yaml/parser"
+	"goyaml.googlecode.com/hg/parser"
 )
 
 // Canonical YAML tags

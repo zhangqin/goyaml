@@ -1,6 +1,6 @@
 //
-//	yaml/token/token.go
-//	goray
+//	token/token.go
+//	goyaml
 //
 //	Created by Ross Light on 2010-06-24.
 //

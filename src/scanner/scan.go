@@ -1,6 +1,6 @@
 //
-//	yaml/scanner/scan.go
-//	goray
+//	scanner/scan.go
+//	goyaml
 //
 //	Created by Ross Light on 2010-06-29.
 //
@@ -11,7 +11,7 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"yaml/token"
+	"goyaml.googlecode.com/hg/token"
 )
 
 // scanToNextToken discards any non-token characters from the reader.

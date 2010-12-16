@@ -1,6 +1,6 @@
 //
-//	yaml/data/constructor.go
-//	goray
+//	data/constructor.go
+//	goyaml
 //
 //	Created by Ross Light on 2010-07-04.
 //
@@ -11,7 +11,7 @@ import (
 	"math"
 	"os"
 	"strconv"
-	"yaml/parser"
+	"goyaml.googlecode.com/hg/parser"
 )
 
 // A Constructor converts a Node into a Go data structure.

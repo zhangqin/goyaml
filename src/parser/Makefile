@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=yaml/parser
+TARG=goyaml.googlecode.com/hg/parser
 GOFILES=\
 	ast.go\
 	parser.go

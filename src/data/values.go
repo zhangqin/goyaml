@@ -1,6 +1,6 @@
 //
-//	yaml/data/values.go
-//	goray
+//	data/values.go
+//	goyaml
 //
 //	Created by Ross Light on 2010-07-04.
 //

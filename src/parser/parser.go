@@ -1,6 +1,6 @@
 //
-//	yaml/parser/parser.go
-//	goray
+//	parser/parser.go
+//	goyaml
 //
 //	Created by Ross Light on 2010-07-02.
 //
@@ -17,8 +17,8 @@ import (
 	"container/list"
 	"io"
 	"os"
-	"yaml/scanner"
-	"yaml/token"
+	"goyaml.googlecode.com/hg/scanner"
+	"goyaml.googlecode.com/hg/token"
 )
 
 // A Schema determines the tag for a node without an explicit tag.

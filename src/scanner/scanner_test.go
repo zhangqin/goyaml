@@ -5,7 +5,7 @@ import (
 	"container/vector"
 	"fmt"
 	"testing"
-	"yaml/token"
+	"goyaml.googlecode.com/hg/token"
 )
 
 type scanTest struct {

@@ -1,6 +1,6 @@
 //
-//	yaml/scanner/result.go
-//	goray
+//	scanner/result.go
+//	goyaml
 //
 //	Created by Ross Light on 2010-06-25.
 //
@@ -9,7 +9,7 @@ package scanner
 
 import (
 	"fmt"
-	"yaml/token"
+	"goyaml.googlecode.com/hg/token"
 )
 
 // Token holds data for a single lexical unit in a YAML document.
