@@ -14,7 +14,6 @@ package scanner
 
 import (
 	"container/list"
-	"container/vector"
 	"fmt"
 	"io"
 	"os"
@@ -37,10 +36,10 @@ type Scanner struct {
 	ended       bool
 
 	indent      int
-	indentStack vector.IntVector
+	indentStack []int
 
 	simpleKeyAllowed bool
-	simpleKeyStack   vector.Vector
+	simpleKeyStack   []*simpleKey
 
 	flowLevel uint
 }
@@ -89,8 +88,7 @@ func (s *Scanner) prepare() (err os.Error) {
 			if err = s.removeStaleSimpleKeys(); err != nil {
 				return
 			}
-			for _, v := range s.simpleKeyStack {
-				skey := v.(*simpleKey)
+			for _, skey := range s.simpleKeyStack {
 				if skey.Possible && skey.TokenNumber == s.parsedCount {
 					needMore = true
 					break
@@ -198,9 +196,7 @@ func (s *Scanner) insertToken(num uint, t Token) {
 }
 
 func (s *Scanner) removeStaleSimpleKeys() (err os.Error) {
-	for _, val := range s.simpleKeyStack {
-		key := val.(*simpleKey)
-
+	for _, key := range s.simpleKeyStack {
 		// A simple key is:
 		// - limited to a single line
 		// - shorter than 1024 characters
@@ -226,13 +222,13 @@ func (s *Scanner) saveSimpleKey() (err os.Error) {
 		if err = s.removeSimpleKey(); err != nil {
 			return
 		}
-		s.simpleKeyStack.Set(s.simpleKeyStack.Len()-1, &key)
+		s.simpleKeyStack[len(s.simpleKeyStack)-1] = &key
 	}
 	return nil
 }
 
 func (s *Scanner) removeSimpleKey() (err os.Error) {
-	key := s.simpleKeyStack.At(s.simpleKeyStack.Len() - 1).(*simpleKey)
+	key := s.simpleKeyStack[len(s.simpleKeyStack)-1]
 	if key.Possible && key.Required {
 		return os.NewError("Could not find expected ':'")
 	}
@@ -241,14 +237,15 @@ func (s *Scanner) removeSimpleKey() (err os.Error) {
 }
 
 func (s *Scanner) increaseFlowLevel() {
-	s.simpleKeyStack.Push(new(simpleKey))
+	s.simpleKeyStack = append(s.simpleKeyStack, new(simpleKey))
 	s.flowLevel++
 }
 
 func (s *Scanner) decreaseFlowLevel() {
 	if s.flowLevel > 0 {
 		s.flowLevel--
-		s.simpleKeyStack.Pop()
+		s.simpleKeyStack[len(s.simpleKeyStack)-1] = nil
+		s.simpleKeyStack = s.simpleKeyStack[:len(s.simpleKeyStack)-1]
 	}
 }
 
@@ -260,7 +257,7 @@ func (s *Scanner) rollIndent(column, tokenNumber int, kind token.Token, pos toke
 	if s.indent < column {
 		// Push the current indentation level to the stack and set the new
 		// indentation level.
-		s.indentStack.Push(s.indent)
+		s.indentStack = append(s.indentStack, s.indent)
 		s.indent = column
 		tok := BasicToken{
 			Kind:  kind,
@@ -287,13 +284,14 @@ func (s *Scanner) unrollIndent(column int) {
 			Start: s.GetPosition(),
 			End:   s.GetPosition(),
 		})
-		s.indent = s.indentStack.Pop()
+		s.indent = s.indentStack[len(s.indentStack)-1]
+		s.indentStack = s.indentStack[:len(s.indentStack)-1]
 	}
 }
 
 func (s *Scanner) streamStart() {
 	s.indent = 0
-	s.simpleKeyStack.Push(new(simpleKey))
+	s.simpleKeyStack = append(s.simpleKeyStack, new(simpleKey))
 	s.simpleKeyAllowed = true
 	s.started = true
 	s.addToken(BasicToken{
@@ -483,7 +481,7 @@ func (s *Scanner) fetchKey() (err os.Error) {
 }
 
 func (s *Scanner) fetchValue() (err os.Error) {
-	skey := s.simpleKeyStack.Last().(*simpleKey)
+	skey := s.simpleKeyStack[len(s.simpleKeyStack)-1]
 	// Have we found a simple key?
 	if skey.Possible {
 		// Create the KEY token and insert it into the queue
