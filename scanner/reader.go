@@ -83,6 +83,9 @@ func (r *reader) Cache(n int) (err os.Error) {
 	// Read more bytes
 	fillSize := int64(n - r.Len())
 	_, err = io.Copyn(r.Buffer, r.Reader, fillSize)
+	if err == os.EOF {
+		err = nil
+	}
 	return
 }
 
