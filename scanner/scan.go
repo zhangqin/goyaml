@@ -132,7 +132,7 @@ func (s *Scanner) scanDirectiveName() (name string, err os.Error) {
 		return
 	}
 
-	for isLetter(s.reader.Bytes()[0]) {
+	for isWordChar(s.reader.Bytes()[0]) {
 		if _, err = io.Copyn(nameBuf, s.reader, 1); err != nil {
 			return
 		}
@@ -238,7 +238,7 @@ func (s *Scanner) scanAnchor(kind token.Token) (tok ValueToken, err os.Error) {
 	if err = s.reader.CacheFull(1); err != nil {
 		return
 	}
-	for s.reader.CheckLetter(0) {
+	for s.reader.CheckWord(0) {
 		b, _ := s.reader.ReadByte()
 		valueBuf.WriteByte(b)
 		if err = s.reader.CacheFull(1); err != nil {
@@ -346,7 +346,7 @@ func (s *Scanner) scanTagHandle(directive bool) (handle string, err os.Error) {
 	if err = s.reader.Cache(1); err != nil {
 		return
 	}
-	for s.reader.CheckLetter(0) {
+	for s.reader.CheckWord(0) {
 		io.Copyn(handleBuf, s.reader, 1)
 		if err = s.reader.Cache(1); err != nil {
 			return
