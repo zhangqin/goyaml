@@ -21,6 +21,20 @@ import (
 	"goyaml.googlecode.com/hg/token"
 )
 
+// An Error is a high-level parser error, including the node.
+type Error struct {
+	os.Error
+	Node Node
+}
+
+func wrapError(origErr os.Error, n Node) (err Error) {
+	var ok bool
+	if err, ok = origErr.(Error); ok {
+		return
+	}
+	return Error{origError, n}
+}
+
 // A Schema determines the tag for a node without an explicit tag.
 type Schema interface {
 	Resolve(Node) (tag string, err os.Error)
@@ -250,6 +264,7 @@ func (parser *Parser) parseNode() (node Node, err os.Error) {
 		if tag == "" {
 			tag, err = parser.schema.Resolve(node)
 			if err != nil {
+				err = wrapError(err, node)
 				return
 			}
 		}
@@ -258,6 +273,7 @@ func (parser *Parser) parseNode() (node Node, err os.Error) {
 		// Construct data
 		data, err = parser.constructor.Construct(node)
 		if err != nil {
+			err = wrapError(err, node)
 			return
 		}
 		node.setData(data)
