@@ -286,6 +286,8 @@ func (parser *Parser) parseNode() (node Node, err os.Error) {
 		if anchor != "" {
 			parser.anchors[anchor] = node
 		}
+	} else if node != nil {
+		err = wrapError(err, node)
 	}
 
 	return
