@@ -27,6 +27,16 @@ type simpleKey struct {
 	TokenNumber uint
 }
 
+// Error is the error type returned by a Scanner. It provides the position of the error.
+type Error struct {
+	os.Error
+	Pos token.Position
+}
+
+func (err Error) String() string {
+	return fmt.Sprintf("%v: %v", err.Pos, err.Error)
+}
+
 // A Scanner generates a sequence of lexical tokens from a reader containing YAML data.
 type Scanner struct {
 	reader      *reader
@@ -77,6 +87,14 @@ func (s *Scanner) Scan() (result Token, err os.Error) {
 	return
 }
 
+func (s *Scanner) wrapError(origErr os.Error) (err Error) {
+	var ok bool
+	if err, ok = origErr.(Error); ok {
+		return
+	}
+	return Error{origErr, s.reader.Pos}
+}
+
 // prepare ensures that there is a token to return.  This will look ahead a few
 // tokens in some cases to ensure that the tokens are logical.
 func (s *Scanner) prepare() (err os.Error) {
@@ -86,6 +104,7 @@ func (s *Scanner) prepare() (err os.Error) {
 			needMore = true
 		} else {
 			if err = s.removeStaleSimpleKeys(); err != nil {
+				err = s.wrapError(err)
 				return
 			}
 			for _, skey := range s.simpleKeyStack {
@@ -102,6 +121,7 @@ func (s *Scanner) prepare() (err os.Error) {
 		// Fetch next token
 		err = s.fetch()
 		if err != nil {
+			err = s.wrapError(err)
 			return
 		}
 	}
