@@ -47,7 +47,16 @@ func AsFloat(data interface{}) (f float64, ok bool) {
 }
 
 // AsUint converts an untyped value to an unsigned integer.
-func AsUint(data interface{}) (i uint64, ok bool) {
+func AsUint(data interface{}) (i uint, ok bool) {
+	i64, ok := AsUint64(data)
+	if ok {
+		i = uint(i64)
+	}
+	return
+}
+
+// AsUint64 converts an untyped value to a uint64.
+func AsUint64(data interface{}) (i uint64, ok bool) {
 	val := reflect.NewValue(data)
 	ok = true
 
@@ -67,7 +76,16 @@ func AsUint(data interface{}) (i uint64, ok bool) {
 }
 
 // AsInt converts an untyped value to a signed integer.
-func AsInt(data interface{}) (i int64, ok bool) {
+func AsInt(data interface{}) (i int, ok bool) {
+	i64, ok := AsInt64(data)
+	if ok {
+		i = int(i64)
+	}
+	return
+}
+
+// AsInt64 converts an untyped value to a int64.
+func AsInt64(data interface{}) (i int64, ok bool) {
 	val := reflect.NewValue(data)
 	ok = true
 
@@ -84,13 +102,23 @@ func AsInt(data interface{}) (i int64, ok bool) {
 
 // AsSequence converts an untyped value to a sequence of values.
 func AsSequence(data interface{}) (seq Sequence, ok bool) {
-	seq, ok = data.([]interface{})
+	switch s := data.(type) {
+	case []interface{}:
+		seq, ok = Sequence(s), true
+	case Sequence:
+		seq, ok = s, true
+	}
 	return
 }
 
 // AsMap converts an untyped value to a map of values.
 func AsMap(data interface{}) (m Map, ok bool) {
-	m, ok = data.(map[interface{}]interface{})
+	switch d := data.(type) {
+	case map[interface{}]interface{}:
+		m, ok = Map(d), true
+	case Map:
+		m, ok = d, true
+	}
 	return
 }
 
