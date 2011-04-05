@@ -15,6 +15,7 @@ package parser
 
 import (
 	"container/list"
+	"fmt"
 	"io"
 	"os"
 	"goyaml.googlecode.com/hg/scanner"
@@ -25,6 +26,10 @@ import (
 type Error struct {
 	os.Error
 	Node Node
+}
+
+func (err Error) String() string {
+	return fmt.Sprintf("%v: %v", err.Node.Pos, err.Error)
 }
 
 func wrapError(origErr os.Error, n Node) (err Error) {
