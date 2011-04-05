@@ -29,7 +29,7 @@ type Error struct {
 }
 
 func (err Error) String() string {
-	return fmt.Sprintf("%v: %v", err.Node.Pos, err.Error)
+	return fmt.Sprintf("%v: %v", err.Node.Start(), err.Error)
 }
 
 func wrapError(origErr os.Error, n Node) (err Error) {
@@ -37,7 +37,7 @@ func wrapError(origErr os.Error, n Node) (err Error) {
 	if err, ok = origErr.(Error); ok {
 		return
 	}
-	return Error{origError, n}
+	return Error{origErr, n}
 }
 
 // A Schema determines the tag for a node without an explicit tag.
