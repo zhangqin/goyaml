@@ -226,7 +226,7 @@ var scannerTests = []scanTest{
 	},
 	scanTest{
 		"Basic document",
-`%YAML 1.2
+		`%YAML 1.2
 ---
 "Hello, World!"
 ...`,
@@ -241,7 +241,7 @@ var scannerTests = []scanTest{
 	},
 	scanTest{
 		"Tag directive",
-`%TAG !yaml! tag:yaml.org,2002:
+		`%TAG !yaml! tag:yaml.org,2002:
 ---
 !yaml!str "foo"`,
 		[]Token{
