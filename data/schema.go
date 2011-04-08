@@ -29,9 +29,11 @@ const (
 type Schema parser.Schema
 
 // SchemaFunc is a function type that fulfills the Schema interface.
-type SchemaFunc func(parser.Node) (string, os.Error)
+type SchemaFunc func(node parser.Node, userData interface{}) (tag string, err os.Error)
 
-func (f SchemaFunc) Resolve(n parser.Node) (string, os.Error) { return f(n) }
+func (f SchemaFunc) Resolve(n parser.Node, userData interface{}) (string, os.Error) {
+	return f(n, userData)
+}
 
 // Schemas from the YAML 1.2 specification
 var (
@@ -39,7 +41,7 @@ var (
 	CoreSchema     = SchemaFunc(coreSchema)
 )
 
-func failsafeSchema(node parser.Node) (tag string, err os.Error) {
+func failsafeSchema(node parser.Node, userData interface{}) (tag string, err os.Error) {
 	switch node.(type) {
 	case *parser.Scalar:
 		tag = StringTag
@@ -64,7 +66,7 @@ var (
 	csNanPat   = regexp.MustCompile(`^\.(nan|NaN|NAN)$`)
 )
 
-func coreSchema(node parser.Node) (tag string, err os.Error) {
+func coreSchema(node parser.Node, userData interface{}) (tag string, err os.Error) {
 	if scalar, ok := node.(*parser.Scalar); ok {
 		s := scalar.String()
 		switch {
@@ -85,5 +87,5 @@ func coreSchema(node parser.Node) (tag string, err os.Error) {
 		return NullTag, nil
 	}
 
-	return failsafeSchema(node)
+	return failsafeSchema(node, userData)
 }

@@ -18,16 +18,18 @@ import (
 type Constructor parser.Constructor
 
 // ConstructorFunc is a function that implements the Constructor interface.
-type ConstructorFunc func(parser.Node) (interface{}, os.Error)
+type ConstructorFunc func(parser.Node, interface{}) (interface{}, os.Error)
 
-func (f ConstructorFunc) Construct(n parser.Node) (interface{}, os.Error) { return f(n) }
+func (f ConstructorFunc) Construct(n parser.Node, userData interface{}) (interface{}, os.Error) {
+	return f(n, userData)
+}
 
 // ConstructorMap uses constructors associated with string tags to construct a value.
 type ConstructorMap map[string]Constructor
 
-func (m ConstructorMap) Construct(n parser.Node) (data interface{}, err os.Error) {
+func (m ConstructorMap) Construct(n parser.Node, userData interface{}) (data interface{}, err os.Error) {
 	if c, ok := m[n.Tag()]; ok {
-		return c.Construct(n)
+		return c.Construct(n, userData)
 	}
 	err = os.NewError("Constructor has no rule for " + n.Tag())
 	return
@@ -44,7 +46,7 @@ var DefaultConstructor Constructor = ConstructorMap{
 	FloatTag:    ConstructorFunc(constructFloat),
 }
 
-func constructStr(n parser.Node) (data interface{}, err os.Error) {
+func constructStr(n parser.Node, userData interface{}) (data interface{}, err os.Error) {
 	node, ok := n.(*parser.Scalar)
 	if !ok {
 		err = os.NewError("Non-scalar given to string")
@@ -54,7 +56,7 @@ func constructStr(n parser.Node) (data interface{}, err os.Error) {
 	return
 }
 
-func constructSeq(n parser.Node) (data interface{}, err os.Error) {
+func constructSeq(n parser.Node, userData interface{}) (data interface{}, err os.Error) {
 	node, ok := n.(*parser.Sequence)
 	if !ok {
 		err = os.NewError("Non-sequence given to sequence")
@@ -64,7 +66,7 @@ func constructSeq(n parser.Node) (data interface{}, err os.Error) {
 	return
 }
 
-func constructMap(n parser.Node) (data interface{}, err os.Error) {
+func constructMap(n parser.Node, userData interface{}) (data interface{}, err os.Error) {
 	node, ok := n.(*parser.Mapping)
 	if !ok {
 		err = os.NewError("Non-mapping given to map")
@@ -74,7 +76,7 @@ func constructMap(n parser.Node) (data interface{}, err os.Error) {
 	return
 }
 
-func constructNull(n parser.Node) (data interface{}, err os.Error) {
+func constructNull(n parser.Node, userData interface{}) (data interface{}, err os.Error) {
 	_, isScalar := n.(*parser.Scalar)
 	_, isEmpty := n.(*parser.Empty)
 	if !isScalar && !isEmpty {
@@ -84,7 +86,7 @@ func constructNull(n parser.Node) (data interface{}, err os.Error) {
 	return nil, nil
 }
 
-func constructBool(n parser.Node) (data interface{}, err os.Error) {
+func constructBool(n parser.Node, userData interface{}) (data interface{}, err os.Error) {
 	var s string
 
 	if scalar, ok := n.(*parser.Scalar); ok {
@@ -107,7 +109,7 @@ func constructBool(n parser.Node) (data interface{}, err os.Error) {
 	return
 }
 
-func constructInt(n parser.Node) (data interface{}, err os.Error) {
+func constructInt(n parser.Node, userData interface{}) (data interface{}, err os.Error) {
 	var s string
 
 	if scalar, ok := n.(*parser.Scalar); ok {
@@ -129,7 +131,7 @@ func constructInt(n parser.Node) (data interface{}, err os.Error) {
 	return
 }
 
-func constructFloat(n parser.Node) (data interface{}, err os.Error) {
+func constructFloat(n parser.Node, userData interface{}) (data interface{}, err os.Error) {
 	var s string
 
 	if scalar, ok := n.(*parser.Scalar); ok {

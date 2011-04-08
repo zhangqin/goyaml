@@ -42,12 +42,12 @@ func wrapError(origErr os.Error, n Node) (err Error) {
 
 // A Schema determines the tag for a node without an explicit tag.
 type Schema interface {
-	Resolve(Node) (tag string, err os.Error)
+	Resolve(node Node, userData interface{}) (tag string, err os.Error)
 }
 
 // A Constructor converts a Node into a Go data structure.
 type Constructor interface {
-	Construct(Node) (data interface{}, err os.Error)
+	Construct(node Node, userData interface{}) (data interface{}, err os.Error)
 }
 
 const DefaultPrefix = "tag:yaml.org,2002:"
@@ -61,20 +61,22 @@ type Parser struct {
 	anchors     map[string]Node
 	schema      Schema
 	constructor Constructor
+	userData    interface{}
 }
 
 // New creates a new parser that reads from the given reader.
-func New(r io.Reader, s Schema, c Constructor) *Parser {
-	return NewWithScanner(scanner.New(r), s, c)
+func New(r io.Reader, s Schema, c Constructor, userData interface{}) *Parser {
+	return NewWithScanner(scanner.New(r), s, c, userData)
 }
 
 // NewWithScanner creates a new parser that reads from an existing scanner.
-func NewWithScanner(scan *scanner.Scanner, schema Schema, con Constructor) (p *Parser) {
+func NewWithScanner(scan *scanner.Scanner, schema Schema, con Constructor, userData interface{}) (p *Parser) {
 	p = new(Parser)
 	p.scanner = scan
 	p.scanQueue = list.New()
 	p.schema = schema
 	p.constructor = con
+	p.userData = userData
 	return p
 }
 
@@ -267,7 +269,7 @@ func (parser *Parser) parseNode() (node Node, err os.Error) {
 
 		// Set up tag
 		if tag == "" {
-			tag, err = parser.schema.Resolve(node)
+			tag, err = parser.schema.Resolve(node, parser.userData)
 			if err != nil {
 				err = wrapError(err, node)
 				return
@@ -276,7 +278,7 @@ func (parser *Parser) parseNode() (node Node, err os.Error) {
 		node.setTag(tag)
 
 		// Construct data
-		data, err = parser.constructor.Construct(node)
+		data, err = parser.constructor.Construct(node, parser.userData)
 		if err != nil {
 			err = wrapError(err, node)
 			return
