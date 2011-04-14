@@ -33,13 +33,13 @@ func AsFloat(data interface{}) (f float64, ok bool) {
 	val := reflect.NewValue(data)
 	ok = true
 
-	switch realVal := val.(type) {
-	case *reflect.FloatValue:
-		f = realVal.Get()
-	case *reflect.IntValue:
-		f = float64(realVal.Get())
-	case *reflect.UintValue:
-		f = float64(realVal.Get())
+	switch val.Kind() {
+	case reflect.Float32, reflect.Float64:
+		f = val.Float()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		f = float64(val.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		f = float64(val.Uint())
 	default:
 		ok = false
 	}
@@ -60,12 +60,12 @@ func AsUint64(data interface{}) (i uint64, ok bool) {
 	val := reflect.NewValue(data)
 	ok = true
 
-	switch realVal := val.(type) {
-	case *reflect.UintValue:
-		i = realVal.Get()
-	case *reflect.IntValue:
-		if realVal.Get() >= 0 {
-			i = uint64(realVal.Get())
+	switch val.Kind() {
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		i = val.Uint()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if val.Int() >= 0 {
+			i = uint64(val.Int())
 		} else {
 			ok = false
 		}
@@ -89,11 +89,11 @@ func AsInt64(data interface{}) (i int64, ok bool) {
 	val := reflect.NewValue(data)
 	ok = true
 
-	switch realVal := val.(type) {
-	case *reflect.IntValue:
-		i = realVal.Get()
-	case *reflect.UintValue:
-		i = int64(realVal.Get())
+	switch val.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		i = val.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		i = int64(val.Uint())
 	default:
 		ok = false
 	}
