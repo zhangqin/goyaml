@@ -30,7 +30,7 @@ func AsBool(data interface{}) (b bool, ok bool) {
 
 // AsFloat converts an untyped value to a floating-point number.
 func AsFloat(data interface{}) (f float64, ok bool) {
-	val := reflect.NewValue(data)
+	val := reflect.ValueOf(data)
 	ok = true
 
 	switch val.Kind() {
@@ -57,7 +57,7 @@ func AsUint(data interface{}) (i uint, ok bool) {
 
 // AsUint64 converts an untyped value to a uint64.
 func AsUint64(data interface{}) (i uint64, ok bool) {
-	val := reflect.NewValue(data)
+	val := reflect.ValueOf(data)
 	ok = true
 
 	switch val.Kind() {
@@ -86,7 +86,7 @@ func AsInt(data interface{}) (i int, ok bool) {
 
 // AsInt64 converts an untyped value to a int64.
 func AsInt64(data interface{}) (i int64, ok bool) {
-	val := reflect.NewValue(data)
+	val := reflect.ValueOf(data)
 	ok = true
 
 	switch val.Kind() {
