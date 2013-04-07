@@ -2,10 +2,9 @@ package scanner
 
 import (
 	"bytes"
-	"container/vector"
 	"fmt"
 	"testing"
-	"goyaml.googlecode.com/hg/token"
+	"code.google.com/p/goyaml/token"
 )
 
 type scanTest struct {
@@ -262,19 +261,18 @@ func posEq(a, b token.Position) bool {
 func TestScanner(t *testing.T) {
 	for _, test := range scannerTests {
 		scanner := New(bytes.NewBufferString(test.Input))
-		results := make(vector.Vector, 0, len(test.Expected))
-		for results.Len() == 0 || results.At(results.Len()-1).(Token).GetKind() != token.STREAM_END {
+		results := make([]Token, 0, len(test.Expected))
+		for len(results) == 0 || results[len(results)-1].GetKind() != token.STREAM_END {
 			tok, err := scanner.Scan()
 			if err != nil {
 				t.Errorf("%v error: %v", test, err)
 				break
 			}
-			results.Push(tok)
+			results = append(results, tok)
 		}
 
-		if len(test.Expected) == results.Len() {
-			for i, val := range results {
-				tok := val.(Token)
+		if len(test.Expected) == len(results) {
+			for i, tok := range results {
 				expected := test.Expected[i]
 				if tok.GetKind() != expected.GetKind() {
 					t.Errorf("%v: got wrong token %v at %d", test, tok.GetKind(), i)
