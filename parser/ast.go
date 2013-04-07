@@ -8,7 +8,7 @@
 package parser
 
 import (
-	"goyaml.googlecode.com/hg/token"
+	"code.google.com/p/goyaml/token"
 )
 
 // Document stores data related to a single document in a stream.

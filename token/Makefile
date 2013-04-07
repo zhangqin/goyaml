@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=goyaml.googlecode.com/hg/token
+TARG=code.google.com/p/goyaml/token
 GOFILES=token.go
 
 include $(GOROOT)/src/Make.pkg

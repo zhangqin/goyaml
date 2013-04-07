@@ -9,7 +9,7 @@ package scanner
 
 import (
 	"fmt"
-	"goyaml.googlecode.com/hg/token"
+	"code.google.com/p/goyaml/token"
 )
 
 // Token holds data for a single lexical unit in a YAML document.

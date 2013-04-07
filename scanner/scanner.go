@@ -14,10 +14,10 @@ package scanner
 
 import (
 	"container/list"
+	"errors"
 	"fmt"
 	"io"
-	"os"
-	"goyaml.googlecode.com/hg/token"
+	"code.google.com/p/goyaml/token"
 )
 
 type simpleKey struct {
@@ -29,12 +29,12 @@ type simpleKey struct {
 
 // Error is the error type returned by a Scanner. It provides the position of the error.
 type Error struct {
-	os.Error
+	error
 	Pos token.Position
 }
 
 func (err Error) String() string {
-	return fmt.Sprintf("%v: %v", err.Pos, err.Error)
+	return fmt.Sprintf("%v: %v", err.Pos, err.Error())
 }
 
 // A Scanner generates a sequence of lexical tokens from a reader containing YAML data.
@@ -73,7 +73,7 @@ func (s *Scanner) GetPosition() token.Position { return s.reader.Pos }
 
 // Scan returns the next token in the stream.  If the stream has already ended,
 // then this method will return nil, nil.
-func (s *Scanner) Scan() (result Token, err os.Error) {
+func (s *Scanner) Scan() (result Token, err error) {
 	if s.tokenQueue.Len() == 0 && s.ended {
 		return
 	}
@@ -87,7 +87,7 @@ func (s *Scanner) Scan() (result Token, err os.Error) {
 	return
 }
 
-func (s *Scanner) wrapError(origErr os.Error) (err Error) {
+func (s *Scanner) wrapError(origErr error) (err Error) {
 	var ok bool
 	if err, ok = origErr.(Error); ok {
 		return
@@ -97,7 +97,7 @@ func (s *Scanner) wrapError(origErr os.Error) (err Error) {
 
 // prepare ensures that there is a token to return.  This will look ahead a few
 // tokens in some cases to ensure that the tokens are logical.
-func (s *Scanner) prepare() (err os.Error) {
+func (s *Scanner) prepare() (err error) {
 	for {
 		needMore := false
 		if s.tokenQueue.Len() == 0 {
@@ -129,7 +129,7 @@ func (s *Scanner) prepare() (err os.Error) {
 }
 
 // fetch adds the next token in the stream to the queue.
-func (s *Scanner) fetch() (err os.Error) {
+func (s *Scanner) fetch() (err error) {
 	if !s.started {
 		s.streamStart()
 		return
@@ -193,7 +193,7 @@ func (s *Scanner) fetch() (err os.Error) {
 	case !(s.reader.CheckBlank(0) || s.reader.CheckAny(0, "-?:,[]{}#&*!|>'\"%@`")) || (s.reader.Check(0, "-") && !s.reader.CheckSpace(1)) || (s.flowLevel == 0 && s.reader.CheckAny(0, "?:") && !s.reader.CheckBlank(1)):
 		return s.fetchPlainScalar()
 	default:
-		err = os.NewError(fmt.Sprintf("Unrecognized token: %c", s.reader.Bytes()[0]))
+		err = errors.New(fmt.Sprintf("Unrecognized token: %c", s.reader.Bytes()[0]))
 	}
 	return
 }
@@ -215,14 +215,14 @@ func (s *Scanner) insertToken(num uint, t Token) {
 	}
 }
 
-func (s *Scanner) removeStaleSimpleKeys() (err os.Error) {
+func (s *Scanner) removeStaleSimpleKeys() (err error) {
 	for _, key := range s.simpleKeyStack {
 		// A simple key is:
 		// - limited to a single line
 		// - shorter than 1024 characters
 		if key.Possible && (key.Pos.Line < s.GetPosition().Line || key.Pos.Index+1024 < s.GetPosition().Index) {
 			if key.Required {
-				return os.NewError("Could not find expected ':'")
+				return errors.New("Could not find expected ':'")
 			}
 			key.Possible = false
 		}
@@ -230,7 +230,7 @@ func (s *Scanner) removeStaleSimpleKeys() (err os.Error) {
 	return
 }
 
-func (s *Scanner) saveSimpleKey() (err os.Error) {
+func (s *Scanner) saveSimpleKey() (err error) {
 	required := s.flowLevel == 0 && s.indent == s.GetPosition().Column
 	if s.simpleKeyAllowed {
 		key := simpleKey{
@@ -247,10 +247,10 @@ func (s *Scanner) saveSimpleKey() (err os.Error) {
 	return nil
 }
 
-func (s *Scanner) removeSimpleKey() (err os.Error) {
+func (s *Scanner) removeSimpleKey() (err error) {
 	key := s.simpleKeyStack[len(s.simpleKeyStack)-1]
 	if key.Possible && key.Required {
-		return os.NewError("Could not find expected ':'")
+		return errors.New("Could not find expected ':'")
 	}
 	key.Possible = false
 	return nil
@@ -321,7 +321,7 @@ func (s *Scanner) streamStart() {
 	})
 }
 
-func (s *Scanner) streamEnd() (err os.Error) {
+func (s *Scanner) streamEnd() (err error) {
 	s.ended = true
 	// Force new line
 	if s.GetPosition().Column != 1 {
@@ -344,7 +344,7 @@ func (s *Scanner) streamEnd() (err os.Error) {
 	return nil
 }
 
-func (s *Scanner) fetchDirective() (err os.Error) {
+func (s *Scanner) fetchDirective() (err error) {
 	// Reset indentation level
 	s.unrollIndent(0)
 	// Reset simple keys
@@ -361,7 +361,7 @@ func (s *Scanner) fetchDirective() (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchDocumentIndicator(kind token.Token) (err os.Error) {
+func (s *Scanner) fetchDocumentIndicator(kind token.Token) (err error) {
 	// Reset indentation level
 	s.unrollIndent(0)
 	// Reset simple keys
@@ -382,7 +382,7 @@ func (s *Scanner) fetchDocumentIndicator(kind token.Token) (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchFlowCollectionStart(kind token.Token) (err os.Error) {
+func (s *Scanner) fetchFlowCollectionStart(kind token.Token) (err error) {
 	// The indicators '[' and '{' may start a simple key
 	if err = s.saveSimpleKey(); err != nil {
 		return
@@ -401,7 +401,7 @@ func (s *Scanner) fetchFlowCollectionStart(kind token.Token) (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchFlowCollectionEnd(kind token.Token) (err os.Error) {
+func (s *Scanner) fetchFlowCollectionEnd(kind token.Token) (err error) {
 	// Reset any potential simple key on the current flow level
 	if err = s.removeSimpleKey(); err != nil {
 		return
@@ -420,7 +420,7 @@ func (s *Scanner) fetchFlowCollectionEnd(kind token.Token) (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchFlowEntry() (err os.Error) {
+func (s *Scanner) fetchFlowEntry() (err error) {
 	// Reset any potential simple keys on the current flow level
 	if err = s.removeSimpleKey(); err != nil {
 		return
@@ -438,12 +438,12 @@ func (s *Scanner) fetchFlowEntry() (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchBlockEntry() (err os.Error) {
+func (s *Scanner) fetchBlockEntry() (err error) {
 	// Are we in the block context?
 	if s.flowLevel == 0 {
 		// Are we allowed to start a new entry?
 		if !s.simpleKeyAllowed {
-			err = os.NewError("Block sequence entries are not allowed in this context")
+			err = errors.New("Block sequence entries are not allowed in this context")
 			return
 		}
 		// Add the BLOCK_SEQUENCE_START token, if needed
@@ -472,12 +472,12 @@ func (s *Scanner) fetchBlockEntry() (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchKey() (err os.Error) {
+func (s *Scanner) fetchKey() (err error) {
 	// In block context, additional checks are required
 	if s.flowLevel == 0 {
 		// Are we allowed to start a new key?
 		if s.simpleKeyAllowed {
-			err = os.NewError("Mapping keys are not allowed in this context")
+			err = errors.New("Mapping keys are not allowed in this context")
 			return
 		}
 		// Add BLOCK_MAPPING_START token if needed
@@ -500,7 +500,7 @@ func (s *Scanner) fetchKey() (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchValue() (err os.Error) {
+func (s *Scanner) fetchValue() (err error) {
 	skey := s.simpleKeyStack[len(s.simpleKeyStack)-1]
 	// Have we found a simple key?
 	if skey.Possible {
@@ -519,7 +519,7 @@ func (s *Scanner) fetchValue() (err os.Error) {
 		if s.flowLevel == 0 {
 			// Are we allowed to start a complex value?
 			if !s.simpleKeyAllowed {
-				err = os.NewError("Mapping values are not allowed in this context")
+				err = errors.New("Mapping values are not allowed in this context")
 				return
 			}
 			// Add the BLOCK_MAPPING_START token, if needed
@@ -540,7 +540,7 @@ func (s *Scanner) fetchValue() (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchAnchor(kind token.Token) (err os.Error) {
+func (s *Scanner) fetchAnchor(kind token.Token) (err error) {
 	// An anchor/alias could be a simple key
 	if err = s.saveSimpleKey(); err != nil {
 		return
@@ -555,7 +555,7 @@ func (s *Scanner) fetchAnchor(kind token.Token) (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchTag() (err os.Error) {
+func (s *Scanner) fetchTag() (err error) {
 	if err = s.saveSimpleKey(); err != nil {
 		return
 	}
@@ -567,7 +567,7 @@ func (s *Scanner) fetchTag() (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchBlockScalar(style int) (err os.Error) {
+func (s *Scanner) fetchBlockScalar(style int) (err error) {
 	if err = s.removeSimpleKey(); err != nil {
 		return err
 	}
@@ -579,7 +579,7 @@ func (s *Scanner) fetchBlockScalar(style int) (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchFlowScalar(style int) (err os.Error) {
+func (s *Scanner) fetchFlowScalar(style int) (err error) {
 	if err = s.saveSimpleKey(); err != nil {
 		return
 	}
@@ -591,7 +591,7 @@ func (s *Scanner) fetchFlowScalar(style int) (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchPlainScalar() (err os.Error) {
+func (s *Scanner) fetchPlainScalar() (err error) {
 	// A plain scalar could be a simple key
 	if err = s.saveSimpleKey(); err != nil {
 		return

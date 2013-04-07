@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=goyaml.googlecode.com/hg/data
+TARG=code.google.com/p/goyaml/data
 GOFILES=\
 	constructor.go\
 	schema.go\

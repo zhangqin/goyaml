@@ -8,9 +8,9 @@
 package data
 
 import (
-	"os"
+	"errors"
 	"regexp"
-	"goyaml.googlecode.com/hg/parser"
+	"code.google.com/p/goyaml/parser"
 )
 
 // Canonical YAML tags
@@ -29,9 +29,9 @@ const (
 type Schema parser.Schema
 
 // SchemaFunc is a function type that fulfills the Schema interface.
-type SchemaFunc func(node parser.Node, userData interface{}) (tag string, err os.Error)
+type SchemaFunc func(node parser.Node, userData interface{}) (tag string, err error)
 
-func (f SchemaFunc) Resolve(n parser.Node, userData interface{}) (string, os.Error) {
+func (f SchemaFunc) Resolve(n parser.Node, userData interface{}) (string, error) {
 	return f(n, userData)
 }
 
@@ -41,7 +41,7 @@ var (
 	CoreSchema     = SchemaFunc(coreSchema)
 )
 
-func failsafeSchema(node parser.Node, userData interface{}) (tag string, err os.Error) {
+func failsafeSchema(node parser.Node, userData interface{}) (tag string, err error) {
 	switch node.(type) {
 	case *parser.Scalar:
 		tag = StringTag
@@ -50,7 +50,7 @@ func failsafeSchema(node parser.Node, userData interface{}) (tag string, err os.
 	case *parser.Mapping:
 		tag = MappingTag
 	default:
-		err = os.NewError("Unrecognized node given to failsafe schema")
+		err = errors.New("Unrecognized node given to failsafe schema")
 	}
 	return
 }
@@ -66,7 +66,7 @@ var (
 	csNanPat   = regexp.MustCompile(`^\.(nan|NaN|NAN)$`)
 )
 
-func coreSchema(node parser.Node, userData interface{}) (tag string, err os.Error) {
+func coreSchema(node parser.Node, userData interface{}) (tag string, err error) {
 	if scalar, ok := node.(*parser.Scalar); ok {
 		s := scalar.String()
 		switch {

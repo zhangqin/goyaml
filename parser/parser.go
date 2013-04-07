@@ -15,24 +15,24 @@ package parser
 
 import (
 	"container/list"
+	"errors"
 	"fmt"
 	"io"
-	"os"
-	"goyaml.googlecode.com/hg/scanner"
-	"goyaml.googlecode.com/hg/token"
+	"code.google.com/p/goyaml/scanner"
+	"code.google.com/p/goyaml/token"
 )
 
 // An Error is a high-level parser error, including the node.
 type Error struct {
-	os.Error
+	error
 	Node Node
 }
 
 func (err Error) String() string {
-	return fmt.Sprintf("%v: %v", err.Node.Start(), err.Error)
+	return fmt.Sprintf("%v: %v", err.Node.Start(), err.Error())
 }
 
-func wrapError(origErr os.Error, n Node) (err Error) {
+func wrapError(origErr error, n Node) (err Error) {
 	var ok bool
 	if err, ok = origErr.(Error); ok {
 		return
@@ -42,12 +42,12 @@ func wrapError(origErr os.Error, n Node) (err Error) {
 
 // A Schema determines the tag for a node without an explicit tag.
 type Schema interface {
-	Resolve(node Node, userData interface{}) (tag string, err os.Error)
+	Resolve(node Node, userData interface{}) (tag string, err error)
 }
 
 // A Constructor converts a Node into a Go data structure.
 type Constructor interface {
-	Construct(node Node, userData interface{}) (data interface{}, err os.Error)
+	Construct(node Node, userData interface{}) (data interface{}, err error)
 }
 
 const DefaultPrefix = "tag:yaml.org,2002:"
@@ -87,7 +87,7 @@ func (parser *Parser) reset() {
 	parser.anchors = make(map[string]Node)
 }
 
-func (parser *Parser) scan() (tok scanner.Token, err os.Error) {
+func (parser *Parser) scan() (tok scanner.Token, err error) {
 	if parser.scanQueue.Len() > 0 {
 		// We have some tokens queued up
 		elem := parser.scanQueue.Front()
@@ -98,7 +98,7 @@ func (parser *Parser) scan() (tok scanner.Token, err os.Error) {
 	return parser.scanner.Scan()
 }
 
-func (parser *Parser) peek() (tok scanner.Token, err os.Error) {
+func (parser *Parser) peek() (tok scanner.Token, err error) {
 	if parser.scanQueue.Len() > 0 {
 		tok = parser.scanQueue.Front().Value.(scanner.Token)
 		return
@@ -115,7 +115,7 @@ func (parser *Parser) unscan(tok scanner.Token) {
 }
 
 // Parse returns all of the documents in the stream.
-func (parser *Parser) Parse() (docs []*Document, err os.Error) {
+func (parser *Parser) Parse() (docs []*Document, err error) {
 	docs = make([]*Document, 0, 1)
 
 docLoop:
@@ -161,9 +161,9 @@ docLoop:
 }
 
 // ParseDocument returns the next document in the stream.
-func (parser *Parser) ParseDocument() (doc *Document, err os.Error) {
+func (parser *Parser) ParseDocument() (doc *Document, err error) {
 	if parser.doc != nil {
-		err = os.NewError("ParseDocument called in the middle of parsing another document")
+		err = errors.New("ParseDocument called in the middle of parsing another document")
 		return
 	}
 
@@ -182,7 +182,7 @@ func (parser *Parser) ParseDocument() (doc *Document, err os.Error) {
 	return
 }
 
-func (parser *Parser) parseDocHeader() (err os.Error) {
+func (parser *Parser) parseDocHeader() (err error) {
 	startedHeader := false
 
 	for {
@@ -208,7 +208,7 @@ func (parser *Parser) parseDocHeader() (err os.Error) {
 			return
 		case token.DOCUMENT_END:
 			if startedHeader {
-				err = os.NewError("End document token appeared after directives")
+				err = errors.New("End document token appeared after directives")
 				return
 			}
 		default:
@@ -221,16 +221,16 @@ func (parser *Parser) parseDocHeader() (err os.Error) {
 	return nil
 }
 
-func (parser *Parser) handleTagDirective(directive scanner.TagDirective) (err os.Error) {
+func (parser *Parser) handleTagDirective(directive scanner.TagDirective) (err error) {
 	if _, hasPrefix := parser.tagPrefixes[directive.Handle]; hasPrefix {
-		err = os.NewError("Tag directive would redefine " + directive.Handle)
+		err = errors.New("Tag directive would redefine " + directive.Handle)
 		return
 	}
 	parser.tagPrefixes[directive.Handle] = directive.Prefix
 	return
 }
 
-func (parser *Parser) parseNode() (node Node, err os.Error) {
+func (parser *Parser) parseNode() (node Node, err error) {
 	anchor, tag, err := parser.parseNodeProperties()
 	if err != nil {
 		return
@@ -256,7 +256,7 @@ func (parser *Parser) parseNode() (node Node, err os.Error) {
 		parser.scan() // Eat alias token
 		return parser.resolveAlias(tok.String())
 	case token.ANCHOR, token.TAG:
-		err = os.NewError("Invalid node properties")
+		err = errors.New("Invalid node properties")
 		return
 	default:
 		// Create an empty node
@@ -295,7 +295,7 @@ func (parser *Parser) parseNode() (node Node, err os.Error) {
 	return
 }
 
-func (parser *Parser) parseNodeProperties() (anchor, tag string, err os.Error) {
+func (parser *Parser) parseNodeProperties() (anchor, tag string, err error) {
 	var tok, tagTok scanner.Token
 
 	if tok, err = parser.scan(); err != nil {
@@ -333,7 +333,7 @@ func (parser *Parser) parseNodeProperties() (anchor, tag string, err os.Error) {
 	return
 }
 
-func (parser *Parser) resolveTag(tok scanner.TagToken) (tag string, err os.Error) {
+func (parser *Parser) resolveTag(tok scanner.TagToken) (tag string, err error) {
 	if tok.Handle == "" {
 		return tok.Suffix, nil
 	}
@@ -341,19 +341,19 @@ func (parser *Parser) resolveTag(tok scanner.TagToken) (tag string, err os.Error
 		return prefix + tok.Suffix, nil
 	}
 
-	err = os.NewError("Unrecognized tag handle: " + tok.Handle)
+	err = errors.New("Unrecognized tag handle: " + tok.Handle)
 	return
 }
 
-func (parser *Parser) resolveAlias(anchor string) (node Node, err os.Error) {
+func (parser *Parser) resolveAlias(anchor string) (node Node, err error) {
 	node, ok := parser.anchors[anchor]
 	if !ok {
-		err = os.NewError("Invalid alias: " + anchor)
+		err = errors.New("Invalid alias: " + anchor)
 	}
 	return
 }
 
-func (parser *Parser) parseScalar() (node *Scalar, err os.Error) {
+func (parser *Parser) parseScalar() (node *Scalar, err error) {
 	tok, err := parser.scan()
 	if err != nil {
 		return
@@ -366,7 +366,7 @@ func (parser *Parser) parseScalar() (node *Scalar, err os.Error) {
 	return
 }
 
-func (parser *Parser) parseSequence(block bool) (node *Sequence, err os.Error) {
+func (parser *Parser) parseSequence(block bool) (node *Sequence, err error) {
 	var tok scanner.Token
 	var sep, sentinel token.Token
 
@@ -391,7 +391,7 @@ func (parser *Parser) parseSequence(block bool) (node *Sequence, err os.Error) {
 	if block {
 		tok, err = parser.scan()
 		if tok.GetKind() != sep {
-			err = os.NewError("Expected leading block entry token")
+			err = errors.New("Expected leading block entry token")
 			return
 		}
 	}
@@ -419,14 +419,14 @@ func (parser *Parser) parseSequence(block bool) (node *Sequence, err os.Error) {
 		if err != nil {
 			return
 		} else if tok.GetKind() != sep && tok.GetKind() != sentinel {
-			err = os.NewError("Unexpected token in sequence: " + tok.String())
+			err = errors.New("Unexpected token in sequence: " + tok.String())
 			return
 		}
 	}
 	return
 }
 
-func (parser *Parser) parseMapping(block bool) (node *Mapping, err os.Error) {
+func (parser *Parser) parseMapping(block bool) (node *Mapping, err error) {
 	var tok scanner.Token
 	var sentinel token.Token
 
@@ -455,7 +455,7 @@ func (parser *Parser) parseMapping(block bool) (node *Mapping, err os.Error) {
 		if err != nil {
 			return
 		} else if tok.GetKind() != token.KEY {
-			err = os.NewError("Expected key")
+			err = errors.New("Expected key")
 			return
 		}
 		pair.Key, err = parser.parseNode()
@@ -468,7 +468,7 @@ func (parser *Parser) parseMapping(block bool) (node *Mapping, err os.Error) {
 		if err != nil {
 			return
 		} else if tok.GetKind() != token.VALUE {
-			err = os.NewError("Expected value")
+			err = errors.New("Expected value")
 			return
 		}
 		pair.Value, err = parser.parseNode()
@@ -492,7 +492,7 @@ func (parser *Parser) parseMapping(block bool) (node *Mapping, err os.Error) {
 		if err != nil {
 			return
 		} else if !(tok.GetKind() == sentinel || (!block && tok.GetKind() == token.FLOW_ENTRY) || (block && tok.GetKind() == token.KEY)) {
-			err = os.NewError("Unexpected token in mapping: " + tok.GetKind().String() + " " + tok.String())
+			err = errors.New("Unexpected token in mapping: " + tok.GetKind().String() + " " + tok.String())
 			return
 		}
 

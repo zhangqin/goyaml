@@ -9,13 +9,13 @@ package scanner
 
 import (
 	"bytes"
+	"errors"
 	"io"
-	"os"
-	"goyaml.googlecode.com/hg/token"
+	"code.google.com/p/goyaml/token"
 )
 
 // scanToNextToken discards any non-token characters from the reader.
-func (s *Scanner) scanToNextToken() (err os.Error) {
+func (s *Scanner) scanToNextToken() (err error) {
 	for {
 		// Allow the BOM mark to start a line
 		if err = s.reader.Cache(3); err != nil {
@@ -67,7 +67,7 @@ func (s *Scanner) scanToNextToken() (err os.Error) {
 	return nil
 }
 
-func (s *Scanner) scanDirective() (tok Token, err os.Error) {
+func (s *Scanner) scanDirective() (tok Token, err error) {
 	startPos := s.GetPosition()
 	// Eat '%'
 	s.reader.Next(1)
@@ -101,7 +101,7 @@ func (s *Scanner) scanDirective() (tok Token, err os.Error) {
 		t.Handle, t.Prefix = handle, prefix
 		tok = t
 	default:
-		err = os.NewError("Unrecognized directive: " + name)
+		err = errors.New("Unrecognized directive: " + name)
 		return
 	}
 
@@ -119,21 +119,21 @@ func (s *Scanner) scanDirective() (tok Token, err os.Error) {
 		}
 	}
 	if !s.reader.CheckBreak(0) {
-		err = os.NewError("Directive did not end with comment or line break")
+		err = errors.New("Directive did not end with comment or line break")
 		return
 	}
 	s.reader.ReadBreak()
 	return tok, nil
 }
 
-func (s *Scanner) scanDirectiveName() (name string, err os.Error) {
+func (s *Scanner) scanDirectiveName() (name string, err error) {
 	nameBuf := new(bytes.Buffer)
 	if err = s.reader.CacheFull(1); err != nil {
 		return
 	}
 
 	for isWordChar(s.reader.Bytes()[0]) {
-		if _, err = io.Copyn(nameBuf, s.reader, 1); err != nil {
+		if _, err = io.CopyN(nameBuf, s.reader, 1); err != nil {
 			return
 		}
 		if err = s.reader.CacheFull(1); err != nil {
@@ -142,12 +142,12 @@ func (s *Scanner) scanDirectiveName() (name string, err os.Error) {
 	}
 
 	if nameBuf.Len() == 0 {
-		err = os.NewError("Directive name not found")
+		err = errors.New("Directive name not found")
 		return
 	}
 
 	if !isWhitespace(s.reader.Bytes()[0]) {
-		err = os.NewError("Unexpected non-alphabetical character")
+		err = errors.New("Unexpected non-alphabetical character")
 		return
 	}
 
@@ -155,8 +155,8 @@ func (s *Scanner) scanDirectiveName() (name string, err os.Error) {
 	return
 }
 
-func (s *Scanner) scanVersionDirectiveValue() (major, minor int, err os.Error) {
-	scanNumber := func() (n int, err os.Error) {
+func (s *Scanner) scanVersionDirectiveValue() (major, minor int, err error) {
+	scanNumber := func() (n int, err error) {
 		numLen := 0
 		if err = s.reader.CacheFull(1); err != nil {
 			return
@@ -171,7 +171,7 @@ func (s *Scanner) scanVersionDirectiveValue() (major, minor int, err os.Error) {
 		}
 
 		if numLen == 0 {
-			err = os.NewError("No number found")
+			err = errors.New("No number found")
 		}
 		return
 	}
@@ -180,7 +180,7 @@ func (s *Scanner) scanVersionDirectiveValue() (major, minor int, err os.Error) {
 		return
 	}
 	if !s.reader.Check(0, ".") {
-		err = os.NewError("Did not find .")
+		err = errors.New("Did not find .")
 		return
 	}
 	s.reader.Next(1)
@@ -190,7 +190,7 @@ func (s *Scanner) scanVersionDirectiveValue() (major, minor int, err os.Error) {
 	return
 }
 
-func (s *Scanner) scanTagDirectiveValue() (handle, prefix string, err os.Error) {
+func (s *Scanner) scanTagDirectiveValue() (handle, prefix string, err error) {
 	s.reader.SkipSpaces()
 
 	// Scan handle
@@ -203,7 +203,7 @@ func (s *Scanner) scanTagDirectiveValue() (handle, prefix string, err os.Error) 
 		return
 	}
 	if !s.reader.CheckSpace(0) {
-		err = os.NewError("Did not find expected whitespace")
+		err = errors.New("Did not find expected whitespace")
 		return
 	}
 	s.reader.SkipSpaces()
@@ -213,7 +213,7 @@ func (s *Scanner) scanTagDirectiveValue() (handle, prefix string, err os.Error) 
 		return
 	}
 	if prefix == "" {
-		err = os.NewError("Did not find expected tag URI")
+		err = errors.New("Did not find expected tag URI")
 		return
 	}
 
@@ -222,14 +222,14 @@ func (s *Scanner) scanTagDirectiveValue() (handle, prefix string, err os.Error) 
 		return
 	}
 	if !s.reader.CheckBlank(0) {
-		err = os.NewError("Did not find expected whitespace or line break")
+		err = errors.New("Did not find expected whitespace or line break")
 		return
 	}
 
 	return
 }
 
-func (s *Scanner) scanAnchor(kind token.Token) (tok ValueToken, err os.Error) {
+func (s *Scanner) scanAnchor(kind token.Token) (tok ValueToken, err error) {
 	startPos := s.GetPosition()
 	// Eat indicator
 	s.reader.Next(1)
@@ -246,7 +246,7 @@ func (s *Scanner) scanAnchor(kind token.Token) (tok ValueToken, err os.Error) {
 		}
 	}
 	if valueBuf.Len() == 0 || !(s.reader.Len() == 0 || s.reader.CheckBreak(0) || s.reader.CheckSpace(0) || s.reader.CheckAny(0, "?:,]}%@`")) {
-		err = os.NewError("Did not find expected alphabetic or numeric character")
+		err = errors.New("Did not find expected alphabetic or numeric character")
 		return
 	}
 	// Create token
@@ -256,7 +256,7 @@ func (s *Scanner) scanAnchor(kind token.Token) (tok ValueToken, err os.Error) {
 	return
 }
 
-func (s *Scanner) scanTag() (tok TagToken, err os.Error) {
+func (s *Scanner) scanTag() (tok TagToken, err error) {
 	var handle, suffix string
 
 	startPos := s.GetPosition()
@@ -272,12 +272,12 @@ func (s *Scanner) scanTag() (tok TagToken, err os.Error) {
 			return
 		}
 		if suffix == "" {
-			err = os.NewError("Did not find expected tag URI")
+			err = errors.New("Did not find expected tag URI")
 			return
 		}
 		// Check for ">" and eat it
 		if !s.reader.Check(0, ">") {
-			err = os.NewError("Did not find expected '>'")
+			err = errors.New("Did not find expected '>'")
 			return
 		}
 		s.reader.Next(1)
@@ -294,7 +294,7 @@ func (s *Scanner) scanTag() (tok TagToken, err os.Error) {
 				return
 			}
 			if suffix == "" {
-				err = os.NewError("Did not find expected tag URI")
+				err = errors.New("Did not find expected tag URI")
 				return
 			}
 		} else {
@@ -315,7 +315,7 @@ func (s *Scanner) scanTag() (tok TagToken, err os.Error) {
 		return
 	}
 	if !s.reader.CheckBlank(0) {
-		err = os.NewError("Did not find expected whitespace or line break")
+		err = errors.New("Did not find expected whitespace or line break")
 		return
 	}
 
@@ -327,7 +327,7 @@ func (s *Scanner) scanTag() (tok TagToken, err os.Error) {
 	return
 }
 
-func (s *Scanner) scanTagHandle(directive bool) (handle string, err os.Error) {
+func (s *Scanner) scanTagHandle(directive bool) (handle string, err error) {
 	handleBuf := new(bytes.Buffer)
 
 	// Check the initial "!" character
@@ -335,19 +335,19 @@ func (s *Scanner) scanTagHandle(directive bool) (handle string, err os.Error) {
 		return
 	}
 	if !s.reader.Check(0, "!") {
-		err = os.NewError("Did not find expected '!'")
+		err = errors.New("Did not find expected '!'")
 		return
 	}
 
 	// Copy the "!" character
-	io.Copyn(handleBuf, s.reader, 1)
+	io.CopyN(handleBuf, s.reader, 1)
 
 	// Copy all subsequent alphabetical and numerical characters
 	if err = s.reader.Cache(1); err != nil {
 		return
 	}
 	for s.reader.CheckWord(0) {
-		io.Copyn(handleBuf, s.reader, 1)
+		io.CopyN(handleBuf, s.reader, 1)
 		if err = s.reader.Cache(1); err != nil {
 			return
 		}
@@ -355,13 +355,13 @@ func (s *Scanner) scanTagHandle(directive bool) (handle string, err os.Error) {
 
 	// Check if the trailing character is "!" and copy it
 	if s.reader.Check(0, "!") {
-		io.Copyn(handleBuf, s.reader, 1)
+		io.CopyN(handleBuf, s.reader, 1)
 	} else {
 		// It's either the "!" tag or not really a tag handle.  If it's a %TAG
 		// directive, it's an error.  If it's a tag token, it must be a part of
 		// a URI.
 		if directive && handleBuf.String() == "!" {
-			err = os.NewError("Did not find expected '!'")
+			err = errors.New("Did not find expected '!'")
 			return
 		}
 	}
@@ -370,7 +370,7 @@ func (s *Scanner) scanTagHandle(directive bool) (handle string, err os.Error) {
 	return
 }
 
-func (s *Scanner) scanTagURI() (uri string, err os.Error) {
+func (s *Scanner) scanTagURI() (uri string, err error) {
 	uriBuf := new(bytes.Buffer)
 
 	if err = s.reader.Cache(1); err != nil {
@@ -383,7 +383,7 @@ func (s *Scanner) scanTagURI() (uri string, err os.Error) {
 				return
 			}
 		} else {
-			io.Copyn(uriBuf, s.reader, 1)
+			io.CopyN(uriBuf, s.reader, 1)
 		}
 
 		if err = s.reader.Cache(1); err != nil {
@@ -395,14 +395,14 @@ func (s *Scanner) scanTagURI() (uri string, err os.Error) {
 	return
 }
 
-func (s *Scanner) scanURIEscape(buf *bytes.Buffer) (err os.Error) {
+func (s *Scanner) scanURIEscape(buf *bytes.Buffer) (err error) {
 	for escapeWidth, left := 0, 1; left > 0; left-- {
 		// Check for a URI-escaped octet
 		if err = s.reader.CacheFull(3); err != nil {
 			return
 		}
 		if !(s.reader.Check(0, "%") && s.reader.CheckHexDigit(1) && s.reader.CheckHexDigit(2)) {
-			err = os.NewError("Did not find URI-escaped octet")
+			err = errors.New("Did not find URI-escaped octet")
 			return
 		}
 		// Get the octet
@@ -422,7 +422,7 @@ func (s *Scanner) scanURIEscape(buf *bytes.Buffer) (err os.Error) {
 			case octet&0xF8 == 0xF0:
 				escapeWidth = 4
 			default:
-				err = os.NewError("Found an incorrect leading UTF-8 octet")
+				err = errors.New("Found an incorrect leading UTF-8 octet")
 				return
 			}
 			left = escapeWidth // `left' will be decremented on the loop's end
@@ -430,7 +430,7 @@ func (s *Scanner) scanURIEscape(buf *bytes.Buffer) (err os.Error) {
 			// For multi-byte UTF-8 sequences, all octets after the first one
 			// must have the two most significant bits set to 10.
 			if octet&0xC0 != 0x80 {
-				err = os.NewError("Found an incorrect UTF-8 octet")
+				err = errors.New("Found an incorrect UTF-8 octet")
 				return
 			}
 		}
@@ -440,7 +440,7 @@ func (s *Scanner) scanURIEscape(buf *bytes.Buffer) (err os.Error) {
 	return
 }
 
-func (s *Scanner) scanBlockScalar(style int) (tok ScalarToken, err os.Error) {
+func (s *Scanner) scanBlockScalar(style int) (tok ScalarToken, err error) {
 	const (
 		chompStrip = -1
 		chompClip  = 0
@@ -478,12 +478,12 @@ func (s *Scanner) scanBlockScalar(style int) (tok ScalarToken, err os.Error) {
 		}
 		s.reader.Next(1)
 	}
-	scanIndent := func() os.Error {
+	scanIndent := func() error {
 		if s.reader.CheckDigit(0) {
 			b, _ := s.reader.ReadByte()
 			increment, _ = asDecimal(b)
 			if increment == 0 {
-				return os.NewError("Found an indentation equal to 0")
+				return errors.New("Found an indentation equal to 0")
 			}
 		}
 		return nil
@@ -523,7 +523,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok ScalarToken, err os.Error) {
 
 	// Ensure that we're at EOL
 	if !s.reader.CheckBlank(0) {
-		err = os.NewError("Did not find expected comment or line break")
+		err = errors.New("Did not find expected comment or line break")
 		return
 	}
 	// Eat line break
@@ -566,7 +566,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok ScalarToken, err os.Error) {
 		leadingBlank = s.reader.CheckSpace(0)
 		// Consume the current line
 		for !s.reader.CheckBreak(0) {
-			io.Copyn(valueBuf, s.reader, 1)
+			io.CopyN(valueBuf, s.reader, 1)
 			if err = s.reader.Cache(1); err != nil {
 				return
 			}
@@ -600,7 +600,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok ScalarToken, err os.Error) {
 	return
 }
 
-func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (breaks []byte, endPos token.Position, err os.Error) {
+func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (breaks []byte, endPos token.Position, err error) {
 	maxIndent := 0
 	endPos = s.GetPosition()
 	breaksBuffer := new(bytes.Buffer)
@@ -621,7 +621,7 @@ func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (b
 		}
 		// Check for a tab character messing the indentation
 		if (*indent == 0 || s.GetPosition().Column < *indent) && s.reader.Check(0, "\t") {
-			err = os.NewError("Found a tab character where an indentation space is expected")
+			err = errors.New("Found a tab character where an indentation space is expected")
 			return
 		}
 		// Have we found a non-empty line?
@@ -653,7 +653,7 @@ func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (b
 	return
 }
 
-func (s *Scanner) scanFlowScalar(style int) (tok ScalarToken, err os.Error) {
+func (s *Scanner) scanFlowScalar(style int) (tok ScalarToken, err error) {
 	startPos := s.GetPosition()
 	valueBuf := new(bytes.Buffer)
 	// Eat the left quote
@@ -669,7 +669,7 @@ func (s *Scanner) scanFlowScalar(style int) (tok ScalarToken, err os.Error) {
 
 		// Better not be a document indicator.
 		if s.GetPosition().Column == 1 && (s.reader.Check(0, "---") || s.reader.Check(0, "...")) && s.reader.CheckBlank(3) {
-			err = os.NewError("Unexpected end of document")
+			err = errors.New("Unexpected end of document")
 			return
 		}
 		// Consume non-blanks
@@ -691,9 +691,9 @@ func (s *Scanner) scanFlowScalar(style int) (tok ScalarToken, err os.Error) {
 				break nonBlankLoop
 			// Escape sequence
 			case style == DoubleQuotedScalarStyle && s.reader.Check(0, "\\"):
-				var rune int
-				if rune, err = s.scanEscapeSeq(); err == nil {
-					valueBuf.WriteRune(rune)
+				var symbol rune
+				if symbol, err = s.scanEscapeSeq(); err == nil {
+					valueBuf.WriteRune(symbol)
 				} else {
 					return
 				}
@@ -782,48 +782,48 @@ func (s *Scanner) scanFlowScalar(style int) (tok ScalarToken, err os.Error) {
 	return
 }
 
-func (s *Scanner) scanEscapeSeq() (rune int, err os.Error) {
+func (s *Scanner) scanEscapeSeq() (symbol rune, err error) {
 	if err = s.reader.CacheFull(2); err != nil {
 		return
 	}
 	codeLength := 0
 	switch s.reader.Bytes()[1] {
 	case '0':
-		rune = '\x00'
+		symbol = '\x00'
 	case 'a':
-		rune = '\x07'
+		symbol = '\x07'
 	case 't', '\t':
-		rune = '\x09'
+		symbol = '\x09'
 	case 'n':
-		rune = '\x0A'
+		symbol = '\x0A'
 	case 'v':
-		rune = '\x0B'
+		symbol = '\x0B'
 	case 'f':
-		rune = '\x0C'
+		symbol = '\x0C'
 	case 'r':
-		rune = '\x0D'
+		symbol = '\x0D'
 	case 'e':
-		rune = '\x1B'
+		symbol = '\x1B'
 	case ' ':
-		rune = '\x20'
+		symbol = '\x20'
 	case '"':
-		rune = '"'
+		symbol = '"'
 	case '\'':
-		rune = '\''
+		symbol = '\''
 	case '\\':
-		rune = '\\'
+		symbol = '\\'
 	// NEL (#x85)
 	case 'N':
-		rune = '\u0085'
+		symbol = '\u0085'
 	// #xA0
 	case '_':
-		rune = '\u00A0'
+		symbol = '\u00A0'
 	// LS (#x2028)
 	case 'L':
-		rune = '\u2028'
+		symbol = '\u2028'
 	// PS (#x2029)
 	case 'P':
-		rune = '\u2029'
+		symbol = '\u2029'
 	case 'x':
 		codeLength = 2
 	case 'u':
@@ -831,7 +831,7 @@ func (s *Scanner) scanEscapeSeq() (rune int, err os.Error) {
 	case 'U':
 		codeLength = 8
 	default:
-		err = os.NewError("Unrecognized escape sequence")
+		err = errors.New("Unrecognized escape sequence")
 		return
 	}
 	s.reader.Next(2)
@@ -845,22 +845,22 @@ func (s *Scanner) scanEscapeSeq() (rune int, err os.Error) {
 		for k := 0; k < codeLength; k++ {
 			b, _ := s.reader.ReadByte()
 			if digit, ok := asHex(b); ok {
-				rune = (rune << 4) | digit
+				symbol = rune((int(symbol) << 4) | digit)
 			} else {
-				err = os.NewError("Did not find expected hex digit")
+				err = errors.New("Did not find expected hex digit")
 				return
 			}
 		}
 		// Check value
-		if (rune >= 0xD800 && rune <= 0xDFFF) || rune > 0x10FFFF {
-			err = os.NewError("Found invalid unicode character")
+		if (symbol >= 0xD800 && symbol <= 0xDFFF) || symbol > 0x10FFFF {
+			err = errors.New("Found invalid unicode character")
 			return
 		}
 	}
 	return
 }
 
-func (s *Scanner) scanPlainScalar() (tok ScalarToken, err os.Error) {
+func (s *Scanner) scanPlainScalar() (tok ScalarToken, err error) {
 	startPos, endPos := s.GetPosition(), s.GetPosition()
 	valueBuf := new(bytes.Buffer)
 	indent := s.indent + 1
@@ -888,7 +888,7 @@ func (s *Scanner) scanPlainScalar() (tok ScalarToken, err os.Error) {
 		for !s.reader.CheckBlank(0) {
 			// Check for 'x:x' in the flow context
 			if s.flowLevel > 0 && s.reader.Check(0, ":") && !s.reader.CheckBlank(1) {
-				err = os.NewError("Found unexpected ':'")
+				err = errors.New("Found unexpected ':'")
 				return
 			}
 			// Check for indicators that may end a plain scalar
@@ -937,7 +937,7 @@ func (s *Scanner) scanPlainScalar() (tok ScalarToken, err os.Error) {
 			if s.reader.CheckSpace(0) {
 				// Check for abusive tabs
 				if leadingBlanks && s.GetPosition().Column < indent && s.reader.Check(0, "\t") {
-					err = os.NewError("Found a tab character that violates indentation")
+					err = errors.New("Found a tab character that violates indentation")
 					return
 				}
 

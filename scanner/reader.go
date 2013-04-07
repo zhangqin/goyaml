@@ -10,8 +10,7 @@ package scanner
 import (
 	"bytes"
 	"io"
-	"os"
-	"goyaml.googlecode.com/hg/token"
+	"code.google.com/p/goyaml/token"
 )
 
 // reader is an arbitrarily buffered reader.
@@ -75,15 +74,15 @@ func (r *reader) updatePos(data []byte) {
 // Cache reads characters into the buffer until the buffer contains n
 // characters, or an error occurs, whichever comes first.  An EOF will not
 // return an error; the cache will simply contain less characters.
-func (r *reader) Cache(n int) (err os.Error) {
+func (r *reader) Cache(n int) (err error) {
 	// Do we already have enough buffered?
 	if r.Len() >= n {
 		return nil
 	}
 	// Read more bytes
 	fillSize := int64(n - r.Len())
-	_, err = io.Copyn(r.Buffer, r.Reader, fillSize)
-	if err == os.EOF {
+	_, err = io.CopyN(r.Buffer, r.Reader, fillSize)
+	if err == io.EOF {
 		err = nil
 	}
 	return
@@ -91,7 +90,7 @@ func (r *reader) Cache(n int) (err os.Error) {
 
 // CacheFull is the same as Cache, except it will return an io.ErrUnexpectedEOF
 // if an EOF is discovered.
-func (r *reader) CacheFull(n int) (err os.Error) {
+func (r *reader) CacheFull(n int) (err error) {
 	err = r.Cache(n)
 	if err == nil && r.Len() < n {
 		err = io.ErrUnexpectedEOF
@@ -101,7 +100,7 @@ func (r *reader) CacheFull(n int) (err os.Error) {
 
 // Read reads up to len(p) bytes into p.  If the buffer is not empty, then any
 // bytes from the buffer will be returned first.
-func (r *reader) Read(p []byte) (n int, err os.Error) {
+func (r *reader) Read(p []byte) (n int, err error) {
 	if r.Buffer.Len() > 0 {
 		n, _ = r.Buffer.Read(p)
 	} else {
@@ -113,10 +112,10 @@ func (r *reader) Read(p []byte) (n int, err os.Error) {
 
 // ReadByte reads a single byte.  If the buffer is not empty, then the byte
 // returned will be the buffer's first byte.
-func (r *reader) ReadByte() (c byte, err os.Error) {
+func (r *reader) ReadByte() (c byte, err error) {
 	if err = r.CacheFull(1); err != nil {
 		if err == io.ErrUnexpectedEOF {
-			err = os.EOF
+			err = io.EOF
 		}
 		return
 	}
@@ -126,8 +125,8 @@ func (r *reader) ReadByte() (c byte, err os.Error) {
 
 // ReadBreak reads a line break at the current position.  This will correctly
 // handle CRLF sequences.
-func (r *reader) ReadBreak() (bytes []byte, err os.Error) {
-	if err := r.Cache(2); err != nil || r.Len() == 0 {
+func (r *reader) ReadBreak() (bytes []byte, err error) {
+	if err = r.Cache(2); err != nil || r.Len() == 0 {
 		return
 	}
 
